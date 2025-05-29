@@ -4,10 +4,48 @@ import sys
 import json
 import base64
 
-from computer_use_demo.loop import sampling_loop, APIProvider
-from computer_use_demo.tools import ToolResult
+from computer_use_demo.loop import (
+    APIProvider,
+    sampling_loop, 
+)
+from computer_use_demo.tools import ToolResult, ToolVersion
 from anthropic.types.beta import BetaMessage, BetaMessageParam
 from anthropic import APIResponse
+
+
+class ModelConfig:
+    tool_version: ToolVersion
+    max_output_tokens: int
+    default_output_tokens: int
+    has_thinking: bool = False
+
+
+SONNET_3_5_NEW = ModelConfig(
+    tool_version="computer_use_20241022",
+    max_output_tokens=1024 * 8,
+    default_output_tokens=1024 * 4,
+)
+
+SONNET_3_7 = ModelConfig(
+    tool_version="computer_use_20250124",
+    max_output_tokens=128_000,
+    default_output_tokens=1024 * 16,
+    has_thinking=True,
+)
+
+CLAUDE_4 = ModelConfig(
+    tool_version="computer_use_20250124",
+    max_output_tokens=128_000,
+    default_output_tokens=1024 * 16,
+    has_thinking=True,
+)
+
+MODEL_TO_MODEL_CONF: dict[str, ModelConfig] = {
+    "claude-3-7-sonnet-20250219": SONNET_3_7,
+    "claude-opus-4@20250508": CLAUDE_4,
+    "claude-sonnet-4-20250514": CLAUDE_4,
+    "claude-opus-4-20250514": CLAUDE_4,
+}
 
 
 async def main():
@@ -20,7 +58,9 @@ async def main():
     # provider = APIProvider.ANTHROPIC
     # model = "claude-3-5-sonnet-20241022",
     provider = APIProvider.BEDROCK
-    model = "us.anthropic.claude-3-5-sonnet-20241022-v2:0"
+    # model = "us.anthropic.claude-3-5-sonnet-20241022-v2:0"
+    model = "us.anthropic.claude-3-7-sonnet-20250219-v1:0"
+    model_conf = MODEL_TO_MODEL_CONF['claude-3-7-sonnet-20250219']
 
 
     # Check if the instruction is provided via command line arguments
@@ -68,17 +108,23 @@ async def main():
 
     # Run the sampling loop
     messages = await sampling_loop(
+        system_prompt_suffix="",
         model=model,
         provider=provider,
-        system_prompt_suffix="",
         messages=messages,
         output_callback=output_callback,
         tool_output_callback=tool_output_callback,
         api_response_callback=api_response_callback,
         api_key=api_key,
         only_n_most_recent_images=10,
-        max_tokens=4096,
+        tool_version=model_conf.tool_version,
+        max_tokens=model_conf.default_output_tokens,
+        thinking_budget=int(model_conf.default_output_tokens / 2),
+        token_efficient_tools_beta=False,
     )
+    
+
+
 
 
 if __name__ == "__main__":
