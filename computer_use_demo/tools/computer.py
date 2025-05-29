@@ -433,29 +433,44 @@ class ComputerTool20250124(BaseComputerTool, BaseAnthropicTool):
                 )
             if not isinstance(scroll_amount, int) or scroll_amount < 0:
                 raise ToolError(f"{scroll_amount=} must be a non-negative int")
-            mouse_move_part = ""
+            
+            # mouse_move_part = ""
+            # if coordinate is not None:
+            #     x, y = self.validate_and_get_coordinates(coordinate)
+            #     mouse_move_part = f"mousemove --sync {x} {y}"
+            # scroll_button = {
+            #     "up": 4,
+            #     "down": 5,
+            #     "left": 6,
+            #     "right": 7,
+            # }[scroll_direction]
+
+            # command_parts = [self.xdotool, mouse_move_part]
+            # if text:
+            #     command_parts.append(f"keydown {text}")
+            # command_parts.append(f"click --repeat {scroll_amount} {scroll_button}")
+            # if text:
+            #     command_parts.append(f"keyup {text}")
+
+            # return await self.shell(" ".join(command_parts))
+
             if coordinate is not None:
                 x, y = self.validate_and_get_coordinates(coordinate)
-                mouse_move_part = f"mousemove --sync {x} {y}"
-            scroll_button = {
-                "up": 4,
-                "down": 5,
-                "left": 6,
-                "right": 7,
+                await asyncio.to_thread(pyautogui.moveTo, x, y)
+            
+            scroll_sign = {
+                "up": 1,
+                "down": -1,
+                "left": -1,
+                "right": 1,
             }[scroll_direction]
+            
+            if scroll_direction in ("up", "down"):
+                await asyncio.to_thread(pyautogui.scroll, scroll_sign * scroll_amount)
+            else:
+                await asyncio.to_thread(pyautogui.hscroll, scroll_sign * scroll_amount)
 
-            command_parts = [self.xdotool, mouse_move_part]
-            if text:
-                command_parts.append(f"keydown {text}")
-            command_parts.append(f"click --repeat {scroll_amount} {scroll_button}")
-            if text:
-                command_parts.append(f"keyup {text}")
-
-            return await self.shell(" ".join(command_parts))
-        
-
-
-
+            return ToolResult(output="Scroll action completed.")
         
 
         if action in ("hold_key", "wait"):
@@ -469,14 +484,15 @@ class ComputerTool20250124(BaseComputerTool, BaseAnthropicTool):
             if action == "hold_key":
                 if text is None:
                     raise ToolError(f"text is required for {action}")
-                escaped_keys = shlex.quote(text)
-                command_parts = [
-                    self.xdotool,
-                    f"keydown {escaped_keys}",
-                    f"sleep {duration}",
-                    f"keyup {escaped_keys}",
-                ]
-                return await self.shell(" ".join(command_parts))
+                # escaped_keys = shlex.quote(text)
+                # command_parts = [
+                #     self.xdotool,
+                #     f"keydown {escaped_keys}",
+                #     f"sleep {duration}",
+                #     f"keyup {escaped_keys}",
+                # ]
+                # return await self.shell(" ".join(command_parts))
+                return ToolResult(output="hold_key action completed.")
 
             if action == "wait":
                 await asyncio.sleep(duration)
@@ -491,19 +507,24 @@ class ComputerTool20250124(BaseComputerTool, BaseAnthropicTool):
         ):
             if text is not None:
                 raise ToolError(f"text is not accepted for {action}")
-            mouse_move_part = ""
+            # mouse_move_part = ""
+            # if coordinate is not None:
+            #     x, y = self.validate_and_get_coordinates(coordinate)
+            #     mouse_move_part = f"mousemove --sync {x} {y}"
+
+            # command_parts = [self.xdotool, mouse_move_part]
+            # if key:
+            #     command_parts.append(f"keydown {key}")
+            # command_parts.append(f"click {CLICK_BUTTONS[action]}")
+            # if key:
+            #     command_parts.append(f"keyup {key}")
+
+            # return await self.shell(" ".join(command_parts))
+        
             if coordinate is not None:
                 x, y = self.validate_and_get_coordinates(coordinate)
-                mouse_move_part = f"mousemove --sync {x} {y}"
-
-            command_parts = [self.xdotool, mouse_move_part]
-            if key:
-                command_parts.append(f"keydown {key}")
-            command_parts.append(f"click {CLICK_BUTTONS[action]}")
-            if key:
-                command_parts.append(f"keyup {key}")
-
-            return await self.shell(" ".join(command_parts))
+        
+            return ToolResult(output="several_clicks action completed.")
 
         return await super().__call__(
             action=action, text=text, coordinate=coordinate, key=key, **kwargs
