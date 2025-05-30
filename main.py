@@ -3,6 +3,8 @@ import os
 import sys
 import json
 import base64
+from dataclasses import dataclass
+
 
 from computer_use_demo.loop import (
     APIProvider,
@@ -12,7 +14,7 @@ from computer_use_demo.tools import ToolResult, ToolVersion
 from anthropic.types.beta import BetaMessage, BetaMessageParam
 from anthropic import APIResponse
 
-
+@dataclass(kw_only=True, frozen=True)
 class ModelConfig:
     tool_version: ToolVersion
     max_output_tokens: int
