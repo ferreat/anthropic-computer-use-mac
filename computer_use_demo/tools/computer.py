@@ -278,7 +278,9 @@ class BaseComputerTool:
                 elif action == "double_click":
                     await asyncio.to_thread(pyautogui.doubleClick)
                     return ToolResult(output="Double click performed.")
-
+                elif action == "middle_click":
+                    await asyncio.to_thread(pyautogui.middleClick)
+                    return ToolResult(output="Middle click performed.")
 
         raise ToolError(f"Invalid action: {action}")
 
@@ -492,7 +494,42 @@ class ComputerTool20250124(BaseComputerTool, BaseAnthropicTool):
                 #     f"keyup {escaped_keys}",
                 # ]
                 # return await self.shell(" ".join(command_parts))
-                return ToolResult(output="hold_key action completed.")
+
+
+
+
+                key_sequence = text.lower().replace("super", "command").split("+")
+                key_sequence = [key.strip() for key in key_sequence]
+                # Map 'cmd' to 'command' for MacOS
+                key_sequence = [
+                    "command" if key == "cmd" else key for key in key_sequence
+                ]
+                # Handle special keys that pyautogui expects
+                special_keys = {
+                    "ctrl": "ctrl",
+                    "control": "ctrl",
+                    "alt": "alt",
+                    "option": "alt",
+                    "shift": "shift",
+                    "command": "command",
+                    "tab": "tab",
+                    "enter": "enter",
+                    "return": "enter",
+                    "esc": "esc",
+                    "escape": "esc",
+                    "space": "space",
+                    "spacebar": "space",
+                    "up": "up",
+                    "down": "down",
+                    "left": "left",
+                    "right": "right",
+                    # Add more special keys as needed
+                }
+                key_sequence = [special_keys.get(key, key) for key in key_sequence]
+
+                with await asyncio.to_thread(pyautogui.hold, *key_sequence):
+                    await asyncio.sleep(duration)
+                return ToolResult(output="Hold keys {text} action completed.")
 
             if action == "wait":
                 await asyncio.sleep(duration)
@@ -523,8 +560,24 @@ class ComputerTool20250124(BaseComputerTool, BaseAnthropicTool):
         
             if coordinate is not None:
                 x, y = self.validate_and_get_coordinates(coordinate)
-        
-            return ToolResult(output="several_clicks action completed.")
+                await asyncio.to_thread(pyautogui.moveTo, x, y)
+
+            if action == "left_click":
+                await asyncio.to_thread(pyautogui.click, button="left")
+                return ToolResult(output="Left click performed.")
+            elif action == "right_click":
+                await asyncio.to_thread(pyautogui.click, button="right")
+                return ToolResult(output="Right click performed.")
+            elif action == "double_click":
+                await asyncio.to_thread(pyautogui.doubleClick)
+                return ToolResult(output="Double click performed.")
+            elif action == "triple_click":
+                # await asyncio.to_thread(pyautogui.tripleClick)
+                await asyncio.to_thread(pyautogui.click, button='left', clicks=3, interval=0.1)
+                return ToolResult(output="Triple click performed.")
+            elif action == "middle_click":
+                await asyncio.to_thread(pyautogui.middleClick)
+                return ToolResult(output="Middle click performed.")
 
         return await super().__call__(
             action=action, text=text, coordinate=coordinate, key=key, **kwargs

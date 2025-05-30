@@ -5,6 +5,8 @@ import json
 import base64
 from dataclasses import dataclass
 
+import httpx
+
 
 from computer_use_demo.loop import (
     APIProvider,
@@ -101,12 +103,21 @@ async def main():
                 f.write(base64.b64decode(image_data))
             print(f"Took screenshot screenshot_{tool_use_id}.png")
 
-    def api_response_callback(response: APIResponse[BetaMessage]):
+    # def api_response_callback(response: APIResponse[BetaMessage]):
+    #     print(
+    #         "\n---------------\nAPI Response:\n",
+    #         json.dumps(json.loads(response.text)["content"], indent=4),  # type: ignore
+    #         "\n",
+    #     )
+    
+    def api_response_callback(request: httpx.Request, response: httpx.Response, e: Exception):
         print(
             "\n---------------\nAPI Response:\n",
             json.dumps(json.loads(response.text)["content"], indent=4),  # type: ignore
             "\n",
         )
+    
+
 
     # Run the sampling loop
     messages = await sampling_loop(
