@@ -1,8 +1,6 @@
 import asyncio
 import os
-from typing import ClassVar, Literal
-
-from anthropic.types.beta import BetaToolBash20241022Param
+from typing import Any, Literal
 
 from .base import BaseAnthropicTool, CLIResult, ToolError, ToolResult
 
@@ -78,9 +76,7 @@ class _BashSession:
                     await asyncio.sleep(self._output_delay)
                     # if we read directly from stdout/stderr, it will wait forever for
                     # EOF. use the StreamReader buffer directly instead.
-                    output = (
-                        self._process.stdout._buffer.decode()  # pyright: ignore[reportAttributeAccessIssue]
-                    )
+                    output = self._process.stdout._buffer.decode()  # pyright: ignore[reportAttributeAccessIssue]
                     if self._sentinel in output:
                         # strip the sentinel and break
                         output = output[: output.index(self._sentinel)]
@@ -94,9 +90,7 @@ class _BashSession:
         if output.endswith("\n"):
             output = output[:-1]
 
-        error = (
-            self._process.stderr._buffer.decode()  # pyright: ignore[reportAttributeAccessIssue]
-        )
+        error = self._process.stderr._buffer.decode()  # pyright: ignore[reportAttributeAccessIssue]
         if error.endswith("\n"):
             error = error[:-1]
 
@@ -107,24 +101,30 @@ class _BashSession:
         return CLIResult(output=output, error=error)
 
 
-class BashTool(BaseAnthropicTool):
+class BashTool20250124(BaseAnthropicTool):
     """
     A tool that allows the agent to run bash commands.
     The tool parameters are defined by Anthropic and are not editable.
     """
 
     _session: _BashSession | None
-    name: ClassVar[Literal["bash"]] = "bash"
-    api_type: ClassVar[Literal["bash_20241022"]] = "bash_20241022"
+
+    api_type: Literal["bash_20250124"] = "bash_20250124"
+    name: Literal["bash"] = "bash"
 
     def __init__(self):
         self._session = None
         super().__init__()
 
+    def to_params(self) -> Any:
+        return {
+            "type": self.api_type,
+            "name": self.name,
+        }
+
     async def __call__(
         self, command: str | None = None, restart: bool = False, **kwargs
     ):
-        print("### Running bash command:", command)
         if restart:
             if self._session:
                 self._session.stop()
@@ -142,8 +142,6 @@ class BashTool(BaseAnthropicTool):
 
         raise ToolError("no command provided.")
 
-    def to_params(self) -> BetaToolBash20241022Param:
-        return {
-            "type": self.api_type,
-            "name": self.name,
-        }
+
+class BashTool20241022(BashTool20250124):
+    api_type: Literal["bash_20250124"] = "bash_20250124"  # pyright: ignore[reportIncompatibleVariableOverride]
